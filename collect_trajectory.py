@@ -141,7 +141,7 @@ async def process_problem(idx, prob, sem, file_lock, pbar):
             async with file_lock:
                 # 注意：这里使用内置的 open，在加锁的保护下且写入量不大时是安全的。
                 # 如果追求极致性能，可考虑安装使用 aiofiles 库。
-                with open('./trajectories/qwen36-27b.jsonl', 'a') as f:
+                with open('qwen2.5-coder-32b.0520.jsonl', 'a') as f:
                     f.write(json.dumps(meta_info, ensure_ascii=False) + '\n')
         
         # 完成一个任务，更新进度条
