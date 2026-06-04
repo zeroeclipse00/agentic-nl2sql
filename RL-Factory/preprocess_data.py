@@ -30,10 +30,7 @@ if __name__ == '__main__':
 
         def process_fn(example, idx):
             data = {
-                "prompt": [{
-                    "role": "user",
-                    "content": example['prompt'],
-                }],
+                "prompt": example['prompt'],
                 "ability": "nl2sql",
                 "reward_model": {
                     "style": "rule",

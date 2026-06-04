@@ -1,7 +1,7 @@
 import random
 from utils import load_jsonl, save_json
 
-data = load_jsonl('./collected/trajectory.jsonl')[:500]
+data = load_jsonl('./trajectories/trajectory.32b-inst.jsonl')[:]
 
 postprocessed_data = []
 

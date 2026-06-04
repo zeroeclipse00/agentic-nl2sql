@@ -5,7 +5,7 @@ import transformers
 from tqdm import tqdm
 import json
 
-problems = load_json('./bird/train.json')
+problems = load_json('./bird/train.json')[1:]
 schemas = load_json('./bird/schemas.json')
 
 # 1. 本地分词器（仅用于统计 Token 数量）
@@ -15,7 +15,7 @@ tokenizer = transformers.AutoTokenizer.from_pretrained(tokenizer_id)
 # 2. 异步 vLLM 客户端设置
 client = AsyncOpenAI(
     api_key="EMPTY",
-    base_url="http://localhost:10091/v1",
+    base_url="http://localhost:10086/v1",
 )
 model_name = "qwen"
 
@@ -82,7 +82,7 @@ async def process_problem(idx, prob, sem, file_lock, pbar):
                     # 避免控制台输出混乱，异步模式下建议用 logging，这里保留 print 但需注意可能会穿插
                     # print(f"\n[Warning] Problem {idx} prompt exceeded max context length.")
                     break 
-                    
+                # print("\033[47;31m输入文本=\033[0m", prompt)
                 try:
                     # 发送异步 API 请求
                     response = await client.completions.create(
@@ -108,7 +108,7 @@ async def process_problem(idx, prob, sem, file_lock, pbar):
                         is_final = True
                     else:
                         output_text += "</sql>"
-                
+                # print(output_text)
                 if is_final or finish_reason == "length":
                     trajectory.append(output_text.strip())
                     break
@@ -136,12 +136,13 @@ async def process_problem(idx, prob, sem, file_lock, pbar):
                     })
                     
         meta_info['attempts'] = attempts
+        # print(attempts)
         if attempts:
             # 异步写文件，必须加锁防止多协程同时写入导致行断裂
             async with file_lock:
                 # 注意：这里使用内置的 open，在加锁的保护下且写入量不大时是安全的。
                 # 如果追求极致性能，可考虑安装使用 aiofiles 库。
-                with open('qwen2.5-coder-32b.0520.jsonl', 'a') as f:
+                with open('qwen2.5-coder-32b.0602.jsonl', 'a') as f:
                     f.write(json.dumps(meta_info, ensure_ascii=False) + '\n')
         
         # 完成一个任务，更新进度条

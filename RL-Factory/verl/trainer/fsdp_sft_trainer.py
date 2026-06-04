@@ -812,11 +812,11 @@ def create_sft_dataset(data_paths, data_config, tokenizer):
     # Then check if multi-turn dataset should be used
     elif data_config.get("multiturn", {}).get("enable", False):
         dataset_cls = MultiTurnSFTDataset
-    elif data_config.get("mask_or_not", "no") == "yes":
-        dataset_cls = AgentSFTDataset
+    # elif data_config.get("mask_or_not", "no") == "yes":
+    #     dataset_cls = AgentSFTDataset
     # Default to single-turn dataset
     else:
-        dataset_cls = SFTDataset
+        dataset_cls = AgentSFTDataset
 
     # Create datasets based on the selected class
     dataset = dataset_cls(parquet_files=data_paths, tokenizer=tokenizer, config=data_config)
