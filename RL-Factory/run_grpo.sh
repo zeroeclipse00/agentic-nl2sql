@@ -5,9 +5,9 @@
 
 set -e -x
 
-export MODEL_PATH=/home/koujianshang/models/Qwen2.5-Coder-7B-Instruct
-export REWARD_MODEL_PATH=/home/koujianshang/models/dummy
-export RESULT_DIR=/home/koujianshang/agentic-nl2sql/res
+export MODEL_PATH=$HOME/models/Qwen2.5-Coder-7B-Instruct
+export REWARD_MODEL_PATH=$HOME/models/dummy
+export RESULT_DIR=$HOME/agentic-nl2sql/res
 
 python3 -m verl.trainer.main_ppo --config-name=rl_factory_ppo_trainer \
     algorithm.adv_estimator=grpo\
