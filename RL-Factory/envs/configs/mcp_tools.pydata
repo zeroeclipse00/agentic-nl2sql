@@ -1,7 +1,7 @@
 [
     {'mcpServers': {
         'sql': {
-            'command': 'python3',
+            'command': '/home/koujianshang/miniconda3/envs/rlfac/bin/python3',
             'args': ['envs/tools/sql.py']
         }
     }}

@@ -16,7 +16,7 @@ project_root = os.path.abspath(os.path.join(current_dir, "../.."))
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from utils import sync_compare_sql
+from utils import sync_compare_sql, sync_exec_sql
 
 class NL2SQLEnv(Env):
     def __init__(self, config, centralized_actor=None):
@@ -49,54 +49,55 @@ class NL2SQLEnv(Env):
             Args:
                 solution_str: the solution text
                 ground_truth: the ground truth
-                method: the method to extract the solution, choices are 'strict' and 'flexible'
-                format_score: the score for the format
-                score: the score for the correct answer
+                format_score: the score for format correctness
+                score: the score for a correct answer
             """
             answer = extract_solution(solution_str=solution_str)
             do_print = random.randint(1, 64) == 1
-            
+
             if do_print:
                 print(f"--------------------------------")
                 print(f"Golden answers: {ground_truth}")
                 print(f"Extracted answer: {answer}")
-                print(f"Solution string: {solution_str}")
-            
-            answer_format_score = format_score if check_alternate_tags(solution_str, r"</?answer>") else (-1 * format_score)
-            num_score=0
-            if check_alternate_tags(solution_str, r"</?tool_call>"):
-                tool_call_format_score = format_score
-                pattern = r"<tool_call>(.*?)</tool_call>"
-                matches = re.findall(pattern, solution_str, re.DOTALL)
-                if len(matches) == 0:
-                    tool_call_format_score = -1 * format_score
-                else:
-                    success_num, fail_num = 0, 0
-                    for idx, content in enumerate(matches):
-                        content_stripped = content.strip()
-                        try:
-                            parsed = json.loads(content_stripped)
-                            success_num += 1
-                        except json.JSONDecodeError:
-                            fail_num += 1
-                    
-                    tool_call_format_score = 2 * format_score * success_num / (success_num + fail_num) - format_score
-                    if success_num + fail_num > 2:
-                        tool_call_format_score -= 0.5 * format_score
-                        num_score = -format_score
-            else:
-                tool_call_format_score = -0.5 * format_score
-                
-            #total_format_score = tool_call_format_score + answer_format_score
-            total_format_score = answer_format_score+num_score
 
+            # --- Format score: proper alternating <answer> tags ---
+            answer_format_score = format_score if check_alternate_tags(solution_str, r"</?answer>") else (-1 * format_score)
+
+            # --- Count SQL tool calls to measure self-correction efficiency ---
+            sql_calls = re.findall(r'"name"\s*:\s*"sql_mcp"', solution_str)
+            num_calls = len(sql_calls)
+
+            # --- No final SQL extracted: model failed to answer ---
             if answer is None:
-                return -1 * format_score + 0.5 * total_format_score
+                return -format_score + 0.5 * answer_format_score
+
+            # --- Check correctness via sql_server ---
+            cmp_status, cmp_result = sync_compare_sql(answer, ground_truth, db_id)
+
+            if cmp_result == '正确':
+                # Efficiency bonus: reward fewer self-correction turns
+                # 1 call → +0.10, 2 calls → +0.05, 3+ calls → +0.00
+                eff_bonus = max(0.0, min(0.10, (3 - num_calls) * 0.05))
+                return score + eff_bonus + 0.5 * answer_format_score
+
+            elif cmp_result == '存在多余列':
+                # Got correct rows but selected extra columns — partial credit
+                return 0.3 + 0.5 * answer_format_score
+
+            elif isinstance(cmp_result, str) and cmp_result.startswith('语法错误'):
+                # SQL failed to execute — clear negative signal
+                return -0.2 + 0.5 * answer_format_score
+
             else:
-                if em_check(answer, ground_truth, db_id):
-                    return score + 0.5 * total_format_score
+                # SQL executed but result doesn't match ('结果不匹配')
+                # Distinguish empty-result trap from semantically wrong SQL
+                exec_status, exec_result = sync_exec_sql(answer, db_id)
+                if exec_status == 1 and (not exec_result or exec_result == []):
+                    # Empty result — common pitfall, penalize more
+                    return -0.1 + 0.5 * answer_format_score
                 else:
-                    return total_format_score
+                    # Non-empty but wrong — slight credit for executable SQL
+                    return 0.1 + 0.5 * answer_format_score
 
         def check_alternate_tags(text, tag_pattern):
             # 用正则提取标签名

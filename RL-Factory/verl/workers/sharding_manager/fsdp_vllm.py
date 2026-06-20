@@ -207,6 +207,10 @@ class FSDPVLLMShardingManager(BaseShardingManager):
             params = convert_weight_keys(params, getattr(self.module, "_fsdp_wrapped_module", self.module))
             log_gpu_memory_usage("After state_dict() in sharding manager memory", logger=logger)
 
+            # 释放 PyTorch 缓存的预留显存，否则 vLLM cumem wake_up 拿不到物理页会 OOM。
+            # state_dict() 的 unshard 会缓存大量显存；本路径原本漏了这步，对齐下方另一路径。
+            get_torch_device().empty_cache()
+
             if self.rollout_config.free_cache_engine:
                 if "tags" in inspect.signature(self.inference_engine.wake_up).parameters:
                     self.inference_engine.wake_up(tags=["weights"])
