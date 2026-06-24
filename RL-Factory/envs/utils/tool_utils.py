@@ -81,6 +81,17 @@ class ToolUtils:
             process_response,
             skip_special_tokens=False,
         )
+        # Pass per-sample db_ids to tool manager if it supports it (e.g. NL2SQLManager)
+        if hasattr(self.env_object.tool_manager, 'set_batch_db_ids'):
+            if self.loop_cnt == 0:
+                reward_models = output.non_tensor_batch.get('reward_model', None)
+                if reward_models is not None:
+                    self._db_ids = [rm.get('db_id', '') if isinstance(rm, dict) else '' for rm in reward_models]
+                else:
+                    self._db_ids = [''] * self.batch_size
+            self.env_object.tool_manager.set_batch_db_ids(
+                [self._db_ids[bi] for bi in batch_idxs]
+            )
         infos_str, dones, _, _ = self.env_object.step(
             responses=responses_str, tokenizer=self.tokenizer
         )
