@@ -172,3 +172,4 @@ tmp/
 temp/
 
 res/
+*.sh
