@@ -4,12 +4,13 @@ from utils import load_json, load_jsonl, save_json, sync_exec_sql, sync_compare_
 import transformers
 from tqdm import tqdm
 import json
+import os
 
 problems = load_json('./bird/dev.json')
 schemas = load_json('./bird/schemas.json')
 
 # 1. 本地分词器（仅用于统计 Token 数量）
-tokenizer_id = "/home/koujianshang/models/Qwen2.5-Coder-32B-Instruct"
+tokenizer_id = os.environ['HOME'] + "models/Qwen2.5-Coder-7B-Instruct"
 tokenizer = transformers.AutoTokenizer.from_pretrained(tokenizer_id)
 
 # 2. 异步 vLLM 客户端设置
@@ -17,11 +18,11 @@ client = AsyncOpenAI(
     api_key="EMPTY",
     base_url="http://localhost:10080/v1",
 )
-model_name = "qwen"
+model_name = "qwen1"
 
 # 上下文参数控制
-MAX_CONTEXT_LENGTH = 32768
-MAX_NEW_TOKENS = 2048
+MAX_CONTEXT_LENGTH = 8192
+MAX_NEW_TOKENS = 1024
 
 curr_search_template = '\n{output_text}\n<sql_exec_result>\n{search_results}\n</sql_exec_result>\n'
 
@@ -51,7 +52,7 @@ def get_final_sql(text):
         return matches[-1].strip()
     return None
 
-N_ATTEMPTS = 10
+N_ATTEMPTS = 1
 
 # 核心异步处理函数
 async def process_problem(idx, prob, sem, file_lock, pbar):
@@ -88,7 +89,7 @@ async def process_problem(idx, prob, sem, file_lock, pbar):
                         model=model_name,
                         prompt=prompt,
                         max_tokens=MAX_NEW_TOKENS,
-                        temperature=1.0,
+                        temperature=0.0,
                         stop=["</sql>"]
                     )
                 except Exception as e:
@@ -138,7 +139,7 @@ async def process_problem(idx, prob, sem, file_lock, pbar):
             async with file_lock:
                 # 注意：这里使用内置的 open，在加锁的保护下且写入量不大时是安全的。
                 # 如果追求极致性能，可考虑安装使用 aiofiles 库。
-                with open('eval_res_10_attempts.jsonl', 'a') as f:
+                with open('eval_res_10_attempts.1.t=0.jsonl', 'a') as f:
                     f.write(json.dumps(meta_info, ensure_ascii=False) + '\n')
         
         # 完成一个任务，更新进度条
