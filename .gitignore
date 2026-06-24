@@ -173,3 +173,5 @@ temp/
 
 res/
 *.sh
+*.md
+*.pdf
