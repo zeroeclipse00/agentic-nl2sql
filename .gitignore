@@ -173,3 +173,10 @@ temp/
 
 res/
 *.sh
+
+# Run logs
+logs/
+
+# Claude Code guidance (project-specific, not shared)
+CLAUDE.md
+.claude/
