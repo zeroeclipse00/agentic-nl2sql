@@ -5,14 +5,14 @@
 
 set -e -x
 
-export MODEL_PATH=$HOME/models/Qwen2.5-Coder-7B-Instruct
-export REWARD_MODEL_PATH=$HOME/models/dummy
-export RESULT_DIR=$HOME/agentic-nl2sql/res
+export MODEL_PATH=$HOME/autodl-tmp/models/Qwen2.5-Coder-7B-Instruct
+export REWARD_MODEL_PATH=$HOME/autodl-tmp/models/dummy
+export RESULT_DIR=$HOME/autodl-tmp/agentic-nl2sql-ljh/res
 
 python3 -m verl.trainer.main_ppo --config-name=rl_factory_ppo_trainer \
     algorithm.adv_estimator=grpo\
-    data.train_files=data/train.parquet\
-    data.val_files=data/test.parquet\
+    data.train_files=$HOME/autodl-tmp/agentic-nl2sql-ljh/RL-Factory/data/train.parquet\
+    data.val_files=$HOME/autodl-tmp/agentic-nl2sql-ljh/RL-Factory/data/test.parquet\
     data.train_batch_size=32\
     data.max_prompt_length=4096\
     data.max_response_length=1024\
@@ -45,7 +45,7 @@ python3 -m verl.trainer.main_ppo --config-name=rl_factory_ppo_trainer \
     actor_rollout_ref.env.config_path=envs/configs/mcp_tools.pydata\
     actor_rollout_ref.env.use_process_reward=False\
     reward_rollout.if_use_reward_rollout=False\
-    reward_rollout.rollout.tensor_model_parallel_size=4\
+    reward_rollout.rollout.tensor_model_parallel_size=2\
     reward_rollout.rollout.gpu_memory_utilization=0.65\
     reward_rollout.rollout.model_name=$REWARD_MODEL_PATH\
     reward_rollout.rollout.free_cache_engine=True\
@@ -56,7 +56,7 @@ python3 -m verl.trainer.main_ppo --config-name=rl_factory_ppo_trainer \
     trainer.logger=['swanlab','console']\
     trainer.project_name='GRPO_nl2sql'\
     trainer.experiment_name='nl2sql_with_thinking'\
-    trainer.n_gpus_per_node=4\
+    trainer.n_gpus_per_node=2\
     trainer.nnodes=1\
     trainer.val_before_train=True\
     trainer.default_local_dir=$RESULT_DIR\

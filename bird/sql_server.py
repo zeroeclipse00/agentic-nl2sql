@@ -12,7 +12,6 @@ from functools import wraps
 import json
 import traceback
 import argparse
-import os
 
 # 【核心修复 1】强制使用 spawn 模式，防止子进程继承 Flask 主进程的庞大内存
 try:
@@ -20,7 +19,7 @@ try:
 except RuntimeError:
     pass
 
-db_prefix = os.environ['HOME'] + "bird_db"
+db_prefix = os.environ['HOME'] + "/autodl-tmp/bird_db"
 
 app = Flask(__name__)
 

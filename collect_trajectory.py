@@ -1,4 +1,5 @@
 import asyncio
+import os
 from openai import AsyncOpenAI  # 引入异步客户端
 from utils import load_json, load_jsonl, save_json, sync_exec_sql, sync_compare_sql, exec_sql
 import transformers
@@ -9,7 +10,7 @@ problems = load_json('./bird/train.json')[1:]
 schemas = load_json('./bird/schemas.json')
 
 # 1. 本地分词器（仅用于统计 Token 数量）
-tokenizer_id = "/home/koujianshang/models/Qwen2.5-Coder-32B-Instruct"
+tokenizer_id = os.environ.get('HOME', '/root') + "/autodl-tmp/models/Qwen2.5-Coder-7B-Instruct"
 tokenizer = transformers.AutoTokenizer.from_pretrained(tokenizer_id)
 
 # 2. 异步 vLLM 客户端设置
